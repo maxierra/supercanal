@@ -3,10 +3,11 @@ services:
     name: supercanal
     env: node
     buildCommand: npm install
-    startCommand: node app.js
+    startCommand: npm start
     envVars:
       - key: NODE_VERSION
         value: 18.17.0
       - key: NODE_ENV
         value: production
     healthCheckPath: /login.html
+    nodeVersion: 18.17.0
