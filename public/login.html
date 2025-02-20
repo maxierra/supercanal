@@ -46,6 +46,15 @@
             background-color: #fff;
             border: 1px solid #dc3545;
         }
+        .success-message {
+            display: none;
+            color: #198754;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: #fff;
+            border: 1px solid #198754;
+        }
     </style>
 </head>
 <body>
@@ -55,6 +64,7 @@
                 <h1>Supercanal</h1>
             </div>
             <div id="errorMessage" class="error-message text-center"></div>
+            <div id="successMessage" class="success-message text-center"></div>
             <form id="loginForm" onsubmit="return handleLogin(event)">
                 <div class="form-floating mb-3">
                     <input type="email" class="form-control" id="email" placeholder="nombre@ejemplo.com" required>
@@ -78,6 +88,7 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
 
             fetch('/api/login', {
                 method: 'POST',
@@ -89,30 +100,42 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Mostrar mensaje de bienvenida
+                    successMessage.style.display = 'block';
+                    successMessage.textContent = `¡Bienvenido ${data.user.name}!`;
+                    errorMessage.style.display = 'none';
+                    
                     // Guardar el token si es necesario
                     localStorage.setItem('token', data.token);
-                    // Redirigir a la página principal
-                    window.location.href = '/';
+                    
+                    // Redirigir después de un breve delay para mostrar el mensaje
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
                 } else {
                     errorMessage.style.display = 'block';
                     errorMessage.textContent = 'Credenciales incorrectas';
+                    successMessage.style.display = 'none';
                 }
             })
             .catch(error => {
                 errorMessage.style.display = 'block';
                 errorMessage.textContent = 'Error al intentar iniciar sesión';
+                successMessage.style.display = 'none';
                 console.error('Error:', error);
             });
 
             return false;
         }
 
-        // Limpiar mensaje de error cuando el usuario empiece a escribir
+        // Limpiar mensajes cuando el usuario empiece a escribir
         document.getElementById('email').addEventListener('input', () => {
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
         });
         document.getElementById('password').addEventListener('input', () => {
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
         });
     </script>
 </body>

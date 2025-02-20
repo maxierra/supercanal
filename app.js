@@ -21,6 +21,18 @@ app.use(session({
 // Servir archivos estáticos
 app.use(express.static('public'));
 
+// Configuración de usuarios
+const users = {
+    'claudio.nahoum@bizland.tech': {
+        password: 'BVJhnwe03AaxqZx0',
+        name: 'Claudio Nahoum'
+    },
+    'leandro.taiariol@bizland.tech': {
+        password: 'kRGfmCkzc7tvj1jP',
+        name: 'Leandro Taiariol'
+    }
+};
+
 // Middleware de autenticación
 const requireAuth = (req, res, next) => {
     if (req.session.authenticated) {
@@ -35,10 +47,14 @@ app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
     
     // Verificar credenciales
-    if (email === 'claudio.nahoum@bizland.tech' && password === 'BVJhnwe03AaxqZx0') {
+    const user = users[email];
+    if (user && user.password === password) {
         req.session.authenticated = true;
-        req.session.user = { email };
-        res.json({ success: true });
+        req.session.user = { 
+            email,
+            name: user.name
+        };
+        res.json({ success: true, user: { email, name: user.name } });
     } else {
         res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
     }
