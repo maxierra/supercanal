@@ -15,7 +15,7 @@ app.use(session({
     secret: 'supercanal-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // cambiar a true si usas HTTPS
+    cookie: { secure: process.env.NODE_ENV === 'production' } // secure en producción
 }));
 
 // Configuración de usuarios
@@ -29,6 +29,22 @@ const users = {
         name: 'Leandro Taiariol'
     }
 };
+
+// Configuración de la API externa
+const API_CONFIG = {
+    baseURL: 'https://plugsc-dev-psp.bizland.tech',
+    auth: {
+        username: process.env.API_USERNAME || 'supercanal',
+        password: process.env.API_PASSWORD || 'supercanal2024'
+    },
+    headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+    }
+};
+
+// Crear instancia de axios con configuración base
+const apiClient = axios.create(API_CONFIG);
 
 // Servir archivos estáticos
 app.use(express.static('public'));
@@ -75,12 +91,10 @@ app.get('/', requireAuth, (req, res) => {
 app.get('/api/files', requireAuth, async (req, res) => {
     try {
         console.log('Iniciando petición a la API externa...');
-        const response = await axios.get('https://plugsc-dev-psp.bizland.tech/api/v1/report/conciliation/files?size=1000', {
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            timeout: 10000
+        const response = await apiClient.get('/api/v1/report/conciliation/files', {
+            params: {
+                size: 1000
+            }
         });
         
         console.log('Respuesta recibida de la API externa');
@@ -92,10 +106,16 @@ app.get('/api/files', requireAuth, async (req, res) => {
         
         res.json(response.data);
     } catch (error) {
-        console.error('Error detallado:', error);
-        res.status(500).json({ 
+        console.error('Error detallado:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data
+        });
+        
+        res.status(error.response?.status || 500).json({ 
             error: 'Error al obtener los datos',
-            details: error.message
+            details: error.message,
+            status: error.response?.status
         });
     }
 });
@@ -109,8 +129,8 @@ app.get('/api/download', requireAuth, async (req, res) => {
 
     try {
         console.log('Iniciando descarga del archivo:', filename);
-        const response = await axios({
-            url: `https://plugsc-dev-psp.bizland.tech/api/v1/report/conciliation/file/download?filename=${filename}`,
+        const response = await apiClient({
+            url: `/api/v1/report/conciliation/file/download?filename=${filename}`,
             method: 'GET',
             responseType: 'stream',
             timeout: 30000,
