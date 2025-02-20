@@ -5,17 +5,27 @@ const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Middleware para parsear JSON y formularios
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Configuración de proxy para Render
+app.set('trust proxy', 1);
+
 // Configuración de sesión
 app.use(session({
-    secret: 'supercanal-secret-key',
+    secret: process.env.SESSION_SECRET || 'supercanal-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' } // secure en producción
+    cookie: {
+        secure: isProduction, // true en producción
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 horas
+    },
+    proxy: isProduction
 }));
 
 // Configuración de usuarios
@@ -51,10 +61,14 @@ app.use(express.static('public'));
 
 // Middleware de autenticación
 const requireAuth = (req, res, next) => {
-    if (req.session.authenticated) {
+    if (req.session && req.session.authenticated) {
         next();
     } else {
-        res.redirect('/login.html');
+        if (req.xhr || req.headers.accept.includes('application/json')) {
+            res.status(401).json({ error: 'No autenticado' });
+        } else {
+            res.redirect('/login.html');
+        }
     }
 };
 
@@ -70,16 +84,55 @@ app.post('/api/login', (req, res) => {
             email,
             name: user.name
         };
-        res.json({ success: true, user: { email, name: user.name } });
+        
+        // Asegurar que la sesión se guarde antes de responder
+        req.session.save((err) => {
+            if (err) {
+                console.error('Error al guardar la sesión:', err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Error al iniciar sesión' 
+                });
+            }
+            res.json({ 
+                success: true, 
+                user: { email, name: user.name } 
+            });
+        });
     } else {
-        res.status(401).json({ success: false, message: 'Credenciales incorrectas' });
+        res.status(401).json({ 
+            success: false, 
+            message: 'Credenciales incorrectas' 
+        });
     }
 });
 
 // Ruta de logout
 app.get('/api/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/login.html');
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Error al cerrar sesión:', err);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Error al cerrar sesión' 
+            });
+        }
+        res.redirect('/login.html');
+    });
+});
+
+// Ruta para verificar el estado de la sesión
+app.get('/api/session', (req, res) => {
+    if (req.session && req.session.authenticated) {
+        res.json({ 
+            authenticated: true, 
+            user: req.session.user 
+        });
+    } else {
+        res.status(401).json({ 
+            authenticated: false 
+        });
+    }
 });
 
 // Ruta principal - requiere autenticación
@@ -91,6 +144,8 @@ app.get('/', requireAuth, (req, res) => {
 app.get('/api/files', requireAuth, async (req, res) => {
     try {
         console.log('Iniciando petición a la API externa...');
+        console.log('Usuario autenticado:', req.session.user.email);
+        
         const response = await apiClient.get('/api/v1/report/conciliation/files', {
             params: {
                 size: 1000
@@ -160,6 +215,9 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Iniciar el servidor
 app.listen(PORT, () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
+    console.log(`Servidor iniciado en http://localhost:${PORT}`);
+    console.log('Modo:', process.env.NODE_ENV || 'desarrollo');
+    console.log('Cookies seguras:', isProduction);
 });

@@ -9,9 +9,11 @@ services:
         value: 18.17.0
       - key: NODE_ENV
         value: production
+      - key: SESSION_SECRET
+        generateValue: true
       - key: API_USERNAME
         value: supercanal
       - key: API_PASSWORD
-        sync: false 
+        sync: false
     healthCheckPath: /login.html
     nodeVersion: 18.17.0
