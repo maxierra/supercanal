@@ -18,9 +18,6 @@ app.use(session({
     cookie: { secure: false } // cambiar a true si usas HTTPS
 }));
 
-// Servir archivos estáticos
-app.use(express.static('public'));
-
 // Configuración de usuarios
 const users = {
     'claudio.nahoum@bizland.tech': {
@@ -32,6 +29,9 @@ const users = {
         name: 'Leandro Taiariol'
     }
 };
+
+// Servir archivos estáticos
+app.use(express.static('public'));
 
 // Middleware de autenticación
 const requireAuth = (req, res, next) => {
