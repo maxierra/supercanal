@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Supercanal</title>
+    <link href="/libs/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            background-color: #f8f9fa;
+        }
+        .login-container {
+            max-width: 400px;
+            width: 90%;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .logo h1 {
+            color: #0d6efd;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        .form-floating {
+            margin-bottom: 1rem;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 0.8rem;
+        }
+        .error-message {
+            display: none;
+            color: #dc3545;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            background-color: #fff;
+            border: 1px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <div class="logo">
+                <h1>Supercanal</h1>
+            </div>
+            <div id="errorMessage" class="error-message text-center"></div>
+            <form id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control" id="email" placeholder="nombre@ejemplo.com" required>
+                    <label for="email">Correo electrónico</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <input type="password" class="form-control" id="password" placeholder="Contraseña" required>
+                    <label for="password">Contraseña</label>
+                </div>
+                <button class="btn btn-primary btn-login" type="submit">
+                    Iniciar sesión
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Guardar el token si es necesario
+                    localStorage.setItem('token', data.token);
+                    // Redirigir a la página principal
+                    window.location.href = '/';
+                } else {
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = 'Credenciales incorrectas';
+                }
+            })
+            .catch(error => {
+                errorMessage.style.display = 'block';
+                errorMessage.textContent = 'Error al intentar iniciar sesión';
+                console.error('Error:', error);
+            });
+
+            return false;
+        }
+
+        // Limpiar mensaje de error cuando el usuario empiece a escribir
+        document.getElementById('email').addEventListener('input', () => {
+            document.getElementById('errorMessage').style.display = 'none';
+        });
+        document.getElementById('password').addEventListener('input', () => {
+            document.getElementById('errorMessage').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
