@@ -2,7 +2,7 @@
   "name": "supercanal",
   "version": "1.0.0",
   "description": "Aplicación de descarga de archivos de conciliación",
-  "main": "app.js",
+  "main": "electron.js",
   "engines": {
     "node": "18.17.0"
   },
@@ -11,7 +11,8 @@
     "build": "electron-builder --win portable",
     "dist": "electron-builder",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "node app.js"
+    "server": "node app.js",
+    "dev": "node app.js"
   },
   "author": "",
   "license": "ISC",
